@@ -1,0 +1,49 @@
+# dsh-hindsight-bank-router 的挂载层。
+#
+# 这个插件必须在 @vectorize-io/hindsight-coding-agents 之前运行 —— 它负责在
+# hindsight 解析 bank 之前，把动态生成的 mapPathToBank 写进
+# ~/.hindsight/coding-agent.json。
+#
+# 不过实际上顺序并不严格：hindsight 的配置读取（readRaw）每次调用都重新读文件、
+# 没有缓存，而它的 workspaceFor 是首次会话时才惰性构建的，所以只要在同一个进程的
+# 加载期写入就一定先于读取。把本行插在 hindsight 之前只是让这个意图更明确。
+- insert:
+    - id: dsh-hindsight-bank-router
+      name: 'dsh-hindsight-bank-router'
+      config:
+        # 部署层总开关（由 DSH profile 控制）。
+        # ⚠️ 真正的用户级开关是 ~/.hindsight/coding-agent.json 里的
+        #    "enableBankRouter": true —— 两者都为真才生效。
+        enabled: true
+
+        # 扫描这些根目录（深度受限）。~ 会被展开。
+        roots:
+          - ~/Documents
+
+        # git 子树的递归深度（非 git 的根目录直接子目录总是会被纳入）
+        maxDepth: 2
+
+        # bank 前缀：把身份来源写进名字里
+        #   git::<远程仓库名>   —— 团队共享，锚定客观身份
+        #   workspace::<目录名> —— 个人记忆，非 git 目录
+        gitPrefix: 'git::'
+        workspacePrefix: 'workspace::'
+
+        # 非 git 目录是否也生成映射。
+        #   true  → workspace::<目录名>，命名空间清晰、不受 hindsight 模板变动影响
+        #   false → 不生成，走 hindsight 默认的 coding-agent::<目录名>
+        routeNonGit: true
+
+        # 是否允许读取【工作区内的】.hindsight.json。
+        # ⚠️ 上游明确反对仓库携带配置（"a cloned repository must not be able to
+        #    turn memory on"），因为克隆下来的仓库不应能决定你的记忆行为。
+        #    保留它是为了团队随仓库统一 bank 命名的便利。
+        #    用户级目录 ~/.hindsight/workspaces/<目录名>.json **始终优先**，
+        #    因此仓库想改你的 bank，你在用户级写一条就能推翻。
+        #    完全不接受该风险时设为 false。
+        allowRepoConfig: true
+
+        # false = 实际写入。首次部署时本项曾误留为 false 而配置尚未核对，
+        # 现已确认写入内容与预期一致（原有 apiUrl/serverMode/reflectTimeoutMs
+        # 全部保留）。若需重新观察而不落盘，临时改为 true 即可。
+        dryRun: false

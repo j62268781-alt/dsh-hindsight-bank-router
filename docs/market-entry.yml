@@ -1,0 +1,12 @@
+# 提交给 DSH 插件市场的条目 —— 原样复制到 PR：
+#   awesome-dsh-plugin/awesome-dsh-plugin → data/plugins/j62268781-alt__dsh-hindsight-bank-router.yml
+#
+# 文件名规则 <owner>__<repo>.yml；校验器只认 url / name / category / description / tarball，
+# 多写键会被拒；npm 与仓库的对应关系由 CI 从 npm 的 repository 字段自动探测，
+# 所以这里没有 npm 字段。
+url: https://github.com/j62268781-alt/dsh-hindsight-bank-router
+name: j62268781-alt/dsh-hindsight-bank-router
+category: memory
+description:
+  en: 'Anchor Hindsight coding-agent memory banks to the remote repository name instead of the local directory name, so every clone of a repo resolves to the same bank. Declarative precedence chain (per-user workspace file, in-repo .hindsight.json, git remote, directory name), a user-level enable switch that must be opted into, and a sidecar state file so it never overwrites mappings you wrote by hand.'
+  zh: '把 Hindsight 编码插件的 bank 身份锚定到远程仓库名，而不是本地目录名，让同一仓库的每个克隆都解析到同一个记忆库。提供声明式优先级链（用户级工作区文件 → 仓库内 .hindsight.json → git 远程名 → 目录名）、需要显式开启的用户级开关，并用 sidecar 状态文件确保绝不覆盖你手写的映射。'

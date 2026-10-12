@@ -1,0 +1,77 @@
+name: publish
+
+# 发版流程：在 GitHub 上发布一个 Release（tag 形如 v0.1.0）→ 自动跑门禁 → 发包到 npm。
+# 也可以手动触发：Actions → publish → Run workflow（可勾「只演练」，只打包不发布）。
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 只打包不发布（npm publish --dry-run）
+        type: boolean
+        default: false
+
+# npm 可信发布（Trusted Publishing）靠 OIDC，不需要任何 secret —— 但要在 npmjs.com 上
+# 给这个包配置 GitHub Actions 作为 Trusted Publisher（见 docs/PUBLISHING.md）。
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      # 可选回退通道：仓库里配了 NPM_TOKEN（granular access token）就用它。
+      # 首次发布必须走这条路 —— 可信发布只能给「已经存在于 npm 上的包」配置。
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Node 24 自带 npm 11；可信发布要求 npm ≥ 11.5.1（Node 22 的 npm 10 不支持 OIDC）。
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: 工具链自检（可信发布要求 npm ≥ 11.5.1）
+        if: env.NPM_TOKEN == ''
+        run: |
+          set -euo pipefail
+          node -v
+          npm -v
+          npm -v | awk -F. '{ if ($1 > 11 || ($1 == 11 && $2 >= 5)) exit 0; exit 1 }' \
+            || { echo "::error::可信发布（OIDC）需要 npm ≥ 11.5.1，当前是 $(npm -v)：把 node-version 提到 24，或改用 NPM_TOKEN 回退通道"; exit 1; }
+
+      # 发布前再跑一次门禁：避免「CI 绿了但发的是另一个 commit」。
+      - name: 门禁
+        run: |
+          node --check index.js
+          node test-harness.mjs
+
+      - name: 预演打包（手动触发且勾了 dry_run）
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+        run: npm publish --dry-run --access public
+
+      - name: 发布到 npm（可信发布 / OIDC）
+        if: env.NPM_TOKEN == '' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+        run: npm publish --access public
+
+      - name: 发布到 npm（NPM_TOKEN 回退通道）
+        if: env.NPM_TOKEN != '' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: 把打包好的 tarball 附到 Release
+        if: github.event_name == 'release'
+        run: |
+          set -euo pipefail
+          npm pack
+          gh release upload "${{ github.event.release.tag_name }}" ./*.tgz --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

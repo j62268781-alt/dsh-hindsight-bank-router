@@ -1,0 +1,73 @@
+name: ci
+
+# 平时改代码就在这几道门禁上把关：push 到 master、以及所有 PR。
+# 发版走的是 publish.yml（release published 触发），两者互不替代：
+# publish 自己也会再跑一次 gate，避免「CI 绿了但发的是另一个 commit」。
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      # 都跑完再下结论：package.json 声明的是 engines.node >= 20
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+
+      # 本插件零运行时依赖，不需要 npm ci。
+      - name: 语法检查
+        run: |
+          node -v
+          node --check index.js
+          node --check test-harness.mjs
+
+      - name: 自测（42 项断言）
+        run: node test-harness.mjs
+
+      # 确认插件声明的挂载清单齐全 —— 这是市场最常见的拒收原因
+      - name: 清单校验
+        run: |
+          node -e '
+            const pkg = require("./package.json");
+            const fs = require("fs");
+            const fail = (m) => { console.error("::error::" + m); process.exit(1); };
+
+            if (!pkg.dsh?.bundle?.patch) fail("package.json 缺少 dsh.bundle.patch（市场拒收原因）");
+            const patch = pkg.dsh.bundle.patch.replace(/^\.\//, "");
+            if (!fs.existsSync(patch)) fail("dsh.bundle.patch 指向的文件不存在: " + patch);
+
+            for (const f of ["index.js", "cordis.patch.yml", "README.md", "LICENSE"]) {
+              if (!fs.existsSync(f)) fail("缺少必需文件: " + f);
+            }
+
+            const yml = fs.readFileSync(patch, "utf8");
+            if (!yml.includes("dsh-hindsight-bank-router")) fail("cordis.patch.yml 未声明本插件行");
+
+            console.log("清单校验通过");
+          '
+
+      - name: 确认测试未污染真实 HOME
+        run: |
+          # 测试必须全程在临时目录运行。这里断言它没有创建过 ~/.hindsight
+          # 之外的持久痕迹 —— 若测试偷偷写了真实路径，这一条会失败。
+          test ! -f "$HOME/.hindsight/.bank-router-state.json" \
+            || { echo "::error::测试污染了真实的 ~/.hindsight"; exit 1; }
+          echo "未污染真实 HOME"

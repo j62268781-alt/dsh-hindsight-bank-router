@@ -1,0 +1,57 @@
+{
+  "name": "@j62268781-alt/dsh-hindsight-bank-router",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "把 Hindsight 编码插件的 bank 身份锚定到远程仓库名，而不是本地目录名 —— 让同一仓库在不同克隆目录名下共享同一个记忆库。Anchors Hindsight coding-agent memory banks to the remote repository name instead of the local directory name, so every clone of a repo shares one bank.",
+  "license": "MIT",
+  "author": "j62268781-alt",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "deepseek",
+    "hindsight",
+    "memory",
+    "agent-memory",
+    "bank",
+    "bank-router"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/j62268781-alt/dsh-hindsight-bank-router.git"
+  },
+  "homepage": "https://github.com/j62268781-alt/dsh-hindsight-bank-router#readme",
+  "bugs": {
+    "url": "https://github.com/j62268781-alt/dsh-hindsight-bank-router/issues"
+  },
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "test": "node test-harness.mjs",
+    "check": "node --check index.js",
+    "verify": "npm run check && npm test",
+    "prepublishOnly": "npm run verify"
+  },
+  "engines": {
+    "node": ">=20",
+    "dsh": ">=0.2.0-0"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

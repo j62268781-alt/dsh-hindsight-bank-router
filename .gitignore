@@ -1,0 +1,10 @@
+node_modules/
+.DS_Store
+*.log
+
+# 发版产物：npm pack 生成的 *.tgz 只用来传 GitHub Release，不进版本库
+*.tgz
+
+# 运行时数据：本仓库作为工作区时，Hindsight 会在这里落记忆状态；
+# 它属于本机运行产物，不是源码。
+.hindsight/
