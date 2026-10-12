@@ -355,6 +355,8 @@ node test-harness.mjs
 
 ## 更多文档
 
+- **[docs/DEPLOY-DSH.md](docs/DEPLOY-DSH.md) — 在 DeepSeek Harness 上部署 Hindsight 记忆系统的完整教程**
+  （自建服务端 + pgroonga 中文检索 + 本插件 + userId 设置 + 故障排查）
 - [CHANGELOG.md](CHANGELOG.md) — 每个版本的用户可见变化，以及**为什么这样做**
 - [docs/PUBLISHING.md](docs/PUBLISHING.md) — 发包到 npm 与上架插件市场的完整流程（维护者）
 - 上游背景：[Hindsight 编码插件文档](https://hindsight.vectorize.io/sdks/integrations/coding-agents) ·
